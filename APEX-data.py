@@ -54,7 +54,7 @@ else:
     print(f"❌ Erro ao acessar a API de drivers. Código: {response.status_code}")
 
 # 🔹 Inserção das Posições
-url_position = "https://api.openf1.org/v1/position"
+url_position = "https://api.openf1.org/v1/position" #API de posicoes esta fora do ar
 response = requests.get(url_position)
 
 if response.status_code == 200:
