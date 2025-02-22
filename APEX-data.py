@@ -171,7 +171,7 @@ if top_driver:
     print(f"   - Pódios: {top_driver[2]}")
     print(f"   - Pole Positions: {top_driver[3]}")
 else:
-    print("❌ Nenhum piloto encontrado.")
+    print("❌ Nenhum piloto encontrado")
 
 # 🔹 Fechar conexão
 cursor.close()
