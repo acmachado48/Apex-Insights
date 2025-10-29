@@ -2,32 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-
-# ... (funções format_time, highlight_max, etc.) ...
-
-def calculate_points(row):
-    # ... (lógica exata como está hoje) ...
-    return points
-
-def get_driver_performance(df):
-    """
-    Recebe o DataFrame limpo e calcula o desempenho dos pilotos.
-    Retorna um novo DataFrame com os resultados.
-    """
-    df_copy = df.copy()
-    df_copy['pontos'] = df_copy.apply(calculate_points, axis=1)
-    # ... (toda a lógica de 'groupby', 'agg', etc.) ...
-    return df_pilotos 
-
-def plot_driver_performance_grid(df_pilotos):
-    """
-    Recebe o DataFrame de desempenho e retorna uma Figura Matplotlib.
-    """
-    # ... (toda a sua lógica de plotagem) ...
-    # Em vez de plt.savefig(...), retorne a figura
-    return fig # Onde 'fig' é o objeto Figure do Matplotlib
-
-
 from urllib.request import urlopen
 import json
 import os
@@ -206,3 +180,170 @@ else:
 # 🔹 Fechar conexão
 cursor.close()
 conn.close()
+
+
+def highlight_max(s):
+    """Destaca o valor máximo em uma Série."""
+    is_max = s == s.max()
+    return ['background-color: #4CAF50' if v else '' for v in is_max]
+
+def highlight_min(s):
+    """Destaca o valor mínimo em uma Série."""
+    is_min = s == s.min()
+    return ['background-color: #f44336' if v else '' for v in is_min]
+
+def format_time(td):
+    """Formata um timedelta para 'M:SS.fff'."""
+    if pd.isna(td):
+        return 'N/A'
+    total_seconds = td.total_seconds()
+    minutes = int(total_seconds // 60)
+    seconds = total_seconds % 60
+    return f"{minutes}:{seconds:06.3f}"
+
+def calculate_points(row):
+    """Calcula pontos com base na posição (lógica do seu 'APEX-data.py')."""
+    pos = row['Position']
+    sprint = row['Sprint']
+    fastest_lap = row['Fastest Lap']
+    
+    points = 0
+    
+    # Pontos da corrida principal
+    if pos == 1: points = 25
+    elif pos == 2: points = 18
+    elif pos == 3: points = 15
+    elif pos == 4: points = 12
+    elif pos == 5: points = 10
+    elif pos == 6: points = 8
+    elif pos == 7: points = 6
+    elif pos == 8: points = 4
+    elif pos == 9: points = 2
+    elif pos == 10: points = 1
+        
+    # Pontos da Sprint
+    if sprint:
+        if pos == 1: points += 8
+        elif pos == 2: points += 7
+        elif pos == 3: points += 6
+        elif pos == 4: points += 5
+        elif pos == 5: points += 4
+        elif pos == 6: points += 3
+        elif pos == 7: points += 2
+        elif pos == 8: points += 1
+            
+    # Ponto de volta mais rápida
+    if fastest_lap and pos <= 10:
+        points += 1
+        
+    return points
+
+# --- Funções de Processamento e Plotagem ---
+
+def get_driver_performance(df):
+    """
+    Recebe o DataFrame limpo e calcula o desempenho dos pilotos.
+    Retorna um novo DataFrame com os resultados.
+    (Lógica do seu 'APEX-data.py')
+    """
+    df_copy = df.copy()
+    
+    # Assumindo que 'Sprint' e 'Fastest Lap' precisam ser criadas
+    # Adicione sua lógica real aqui, por enquanto vou simular
+    if 'Sprint' not in df_copy.columns:
+        # Simulação: Apenas corridas com 'Sprint' no nome
+        df_copy['Sprint'] = df_copy['Circuit'].str.contains('Sprint', case=False, na=False)
+    if 'Fastest Lap' not in df_copy.columns:
+        # Simulação: Piloto na P1 ou P2
+        df_copy['Fastest Lap'] = df_copy['Position'].isin([1, 2])
+    
+    
+    df_copy['pontos'] = df_copy.apply(calculate_points, axis=1)
+    
+    df_pilotos = df_copy.groupby('Driver').agg(
+        total_pontos=('pontos', 'sum'),
+        media_posicao=('Position', 'mean'),
+        melhor_posicao=('Position', 'min'),
+        pior_posicao=('Position', 'max'),
+        poles=('Position', lambda x: (x == 1).sum()),
+        podiums=('Position', lambda x: (x <= 3).sum()),
+        corridas_disputadas=('Circuit', 'nunique'),
+        media_tempo_qualify=('Time', 'mean') # Média do timedelta
+    ).sort_values(by='total_pontos', ascending=False)
+    
+    # Formata a média de tempo para exibição
+    df_pilotos['media_tempo_qualify_str'] = df_pilotos['media_tempo_qualify'].apply(format_time)
+    
+    return df_pilotos
+
+def plot_driver_performance_grid(df_pilotos):
+    """
+    Recebe o DataFrame de desempenho e retorna uma Figura Matplotlib.
+    (Lógica de plotagem do seu 'APEX-data.py')
+    """
+    # Seleciona apenas as colunas numéricas para o heatmap
+    df_heatmap = df_pilotos[['total_pontos', 'media_posicao', 'melhor_posicao', 'pior_posicao', 'poles', 'podiums', 'corridas_disputadas']]
+    
+    # Normaliza os dados para o heatmap
+    df_normalized = (df_heatmap - df_heatmap.min()) / (df_heatmap - df_heatmap.max())
+    
+    # Cores personalizadas (Ex: Vermelho para ruim, Verde para bom)
+    # Invertemos: Pior Posição e Média Posição (quanto menor, melhor)
+    df_normalized['media_posicao'] = 1 - df_normalized['media_posicao']
+    df_normalized['pior_posicao'] = 1 - df_normalized['pior_posicao']
+    
+    cmap = LinearSegmentedColormap.from_list("custom_cmap", ["#f44336", "#FFEB3B", "#4CAF50"])
+    
+    fig, ax = plt.subplots(figsize=(15, 10))
+    sns.heatmap(
+        df_normalized, 
+        annot=df_heatmap,  # Mostra os valores reais
+        fmt=".0f",         # Formato dos números (inteiro)
+        cmap=cmap, 
+        linewidths=.5, 
+        ax=ax
+    )
+    ax.set_title('Grid de Desempenho dos Pilotos (Análise position.csv)', fontsize=16)
+    ax.set_xlabel('Métricas')
+    ax.set_ylabel('Pilotos')
+    plt.xticks(rotation=45, ha='right')
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    
+    # Em vez de plt.savefig(...), retorne a figura
+    return fig
+
+def plot_temporal_evolution(df, driver_name):
+    """
+    Recebe o DataFrame limpo e o nome de um piloto, retorna a figura da evolução.
+    (Lógica de plotagem do seu 'APEX-data.py')
+    """
+    df_piloto = df[df['Driver'] == driver_name].sort_values(by='Circuit') # Simplificado
+    
+    if df_piloto.empty:
+        fig, ax = plt.subplots()
+        ax.text(0.5, 0.5, f'Piloto "{driver_name}" não encontrado.', horizontalalignment='center', verticalalignment='center')
+        return fig
+
+    fig, ax1 = plt.subplots(figsize=(15, 7))
+    
+    # Eixo 1: Posição
+    color = 'tab:blue'
+    ax1.set_xlabel('Corrida (Circuito)')
+    ax1.set_ylabel('Posição', color=color)
+    ax1.plot(df_piloto['Circuit'], df_piloto['Position'], color=color, marker='o', label='Posição')
+    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.invert_yaxis() # Posição 1 é melhor (em cima)
+    
+    # Eixo 2: Tempo (convertido para segundos para plotar)
+    ax2 = ax1.twinx()
+    color = 'tab:red'
+    ax2.set_ylabel('Tempo de Qualify (segundos)', color=color)
+    ax2.plot(df_piloto['Circuit'], df_piloto['Time'].dt.total_seconds(), color=color, linestyle='--', marker='x', label='Tempo (s)')
+    ax2.tick_params(axis='y', labelcolor=color)
+    
+    ax1.set_title(f'Evolução Temporal de {driver_name}')
+    ax1.set_xticklabels(df_piloto['Circuit'], rotation=45, ha='right')
+    fig.tight_layout()
+    
+    return fig
