@@ -1,0 +1,44 @@
+{% extends "base.html" %} {% block content %}
+<h1>Pesquisar na API Ergast</h1>
+
+<!-- Formulário de Campeões -->
+<div class="card">
+  <h3>Buscar Campeão por Ano</h3>
+  <form action="/search" method="POST">
+    <input type="hidden" name="search_type" value="champion" />
+    <label for="year">Ano:</label>
+    <input type="number" id="year" name="year" value="2008" required />
+    <button type="submit">Buscar</button>
+  </form>
+
+  {% if champion_result %}
+  <h4>Resultado:</h4>
+  <p><strong>Piloto:</strong> {{ champion_result.driver }}</p>
+  <p><strong>Equipe:</strong> {{ champion_result.constructor }}</p>
+  <p><strong>Pontos:</strong> {{ champion_result.points }}</p>
+  {% endif %}
+</div>
+
+<!-- Formulário de Volta Rápida -->
+<div class="card">
+  <h3>Buscar Volta Rápida por Corrida</h3>
+  <form action="/search" method="POST">
+    <input type="hidden" name="search_type" value="fastest_lap" />
+    <label for="year_lap">Ano:</label>
+    <input type="number" id="year_lap" name="year" value="2023" required />
+    <label for="round">Etapa (Round):</label>
+    <input type="number" id="round" name="round" value="5" required />
+    <button type="submit">Buscar</button>
+  </form>
+
+  {% if lap_result %}
+  <h4>Resultado:</h4>
+  {% if lap_result.error %}
+  <p>{{ lap_result.error }}</p>
+  {% else %}
+  <p><strong>Piloto:</strong> {{ lap_result.driver }}</p>
+  <p><strong>Tempo:</strong> {{ lap_result.time }}</p>
+  <p><strong>Vel. Média:</strong> {{ lap_result.avg_speed }}</p>
+  {% endif %} {% endif %}
+</div>
+{% endblock %}

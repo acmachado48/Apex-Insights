@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Apex Insights F1</title>
+    <!-- (Opcional) Adicione um CSS simples -->
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        background: #f4f4f4;
+      }
+      nav {
+        background: #15151e;
+        padding: 1rem;
+      }
+      nav a {
+        color: white;
+        text-decoration: none;
+        margin-right: 1.5rem;
+      }
+      .container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 1rem;
+        background: white;
+        border-radius: 8px;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/analysis">Análise (CSV)</a>
+      <a href="/search">Pesquisar API</a>
+    </nav>
+    <div class="container">{% block content %}{% endblock %}</div>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{% extends "base.html" %} {% block content %}
+<h1>Dashboard F1</h1>
+<p>Bem-vindo ao Apex Insights. Use a navegação para explorar.</p>
+
+{% if champion %}
+<div class="card">
+  <h3>Campeão de 2023 (Dados da API)</h3>
+  <p>
+    <strong>Piloto:</strong> {{ champion.driver }} ({{ champion.nationality }})
+  </p>
+  <p><strong>Equipe:</strong> {{ champion.constructor }}</p>
+  <p><strong>Pontos:</strong> {{ champion.points }}</p>
+</div>
+{% endif %} {% endblock %}
